@@ -7,6 +7,8 @@ parameter	cycle = 100.0;
 logic 		i_clk;
 logic 		i_rst_n, i_start;
 logic [3:0] o_random_out;
+logic [3:0] o_random_capture;
+logic [3:0] o_random_prev;
 
 initial i_clk = 0;
 always #(cycle/2.0) i_clk = ~i_clk;
@@ -15,12 +17,19 @@ Top top0(
 	.i_clk(i_clk),
 	.i_rst_n(i_rst_n),
 	.i_start(i_start),
-	.o_random_out(o_random_out)
+	.o_random_out(o_random_out),
+	.o_random_capture(o_random_capture),
+	.o_random_prev(o_random_prev)
 );
 
 initial begin
+`ifdef IVERILOG
+	$dumpfile("Lab1_test.vcd");
+	$dumpvars(0, Top_test);
+`else
 	$fsdbDumpfile("Lab1_test.fsdb");
 	$fsdbDumpvars(0, Top_test, "+all");
+`endif
 end
 
 initial begin	
