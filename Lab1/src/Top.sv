@@ -8,7 +8,9 @@ module Top (
 	output [3:0] o_p1_out,
 	output [3:0] o_p2_out,
 	output       o_p1_blink,
-	output       o_p2_blink
+	output       o_p2_blink,
+	output [3:0] o_random_capture,
+	output [3:0] o_random_prev
 );
 
 // ===== States =====
@@ -30,6 +32,8 @@ logic [1:0]  state_r, state_w;
 logic [25:0] count_r, count_w;  // Timer counter
 logic [25:0] speed_r, speed_w;  // Current frequency delay
 logic [3:0]  out_r, out_w;      // Output buffer
+logic [3:0]  capture_r, capture_w; // Captured random number
+logic [3:0]  prev_r, prev_w;       // Previous random number
 
 logic [3:0]  p1_guess_r, p1_guess_w;
 logic [3:0]  p2_guess_r, p2_guess_w;
@@ -46,6 +50,8 @@ assign o_p1_out     = p1_guess_r;
 assign o_p2_out     = p2_guess_r;
 assign o_p1_blink   = p1_blink_r;
 assign o_p2_blink   = p2_blink_r;
+assign o_random_capture = capture_r;
+assign o_random_prev = prev_r;
 
 // ===== Combinational Circuits =====
 always_comb begin
@@ -55,6 +61,8 @@ always_comb begin
     count_w       = count_r;
     speed_w       = speed_r;
     out_w         = out_r;
+    capture_w     = capture_r;
+    prev_w        = prev_r;
     
     p1_guess_w    = p1_guess_r;
     p2_guess_w    = p2_guess_r;
@@ -83,13 +91,15 @@ always_comb begin
                 speed_w = SPEED_INIT;
                 count_w = 0;
                 out_w   = lfsr_r[3:0]; // Initial jump
+                prev_w  = out_r;       // Bonus: 記憶前次亂數結果
             end
         end
 
         S_RUN: begin
-            if (i_start) begin // Restart random process instantly
-                speed_w = SPEED_INIT;
-                count_w = 0;
+            if (i_start) begin // Restart random process instantly & 擷取中途亂數
+                speed_w   = SPEED_INIT;
+                count_w   = 0;
+                capture_w = out_r;      // Bonus: 記錄擷取的亂數
             end else begin
                 count_w = count_r + 1;
                 if (count_r >= speed_r) begin
@@ -141,6 +151,8 @@ always_ff @(posedge i_clk or negedge i_rst_n) begin
         count_r       <= '0;
         speed_r       <= '0;
         out_r         <= '0;
+        capture_r     <= '0;
+        prev_r        <= '0;
         p1_guess_r    <= '0;
         p2_guess_r    <= '0;
         blink_cnt_r   <= '0;
@@ -154,6 +166,8 @@ always_ff @(posedge i_clk or negedge i_rst_n) begin
         count_r       <= count_w;
         speed_r       <= speed_w;
         out_r         <= out_w;
+        capture_r     <= capture_w;
+        prev_r        <= prev_w;
         p1_guess_r    <= p1_guess_w;
         p2_guess_r    <= p2_guess_w;
         blink_cnt_r   <= blink_cnt_w;

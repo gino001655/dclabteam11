@@ -138,6 +138,8 @@ module DE2_115 (
 
 logic keydown;
 logic [3:0] random_value;
+logic [3:0] random_capture;
+logic [3:0] random_prev;
 logic [3:0] p1_out, p2_out;
 logic p1_blink, p2_blink;
 
@@ -158,12 +160,23 @@ Top top0(
 	.o_p1_out(p1_out),
 	.o_p2_out(p2_out),
 	.o_p1_blink(p1_blink),
-	.o_p2_blink(p2_blink)
+	.o_p2_blink(p2_blink),
+	.o_random_capture(random_capture),
+	.o_random_prev(random_prev)
 );
 
 logic [6:0] hex0_w, hex1_w;
 logic [6:0] hex2_w, hex3_w;
 logic [6:0] hex4_w, hex5_w;
+
+logic mode_gambling;
+assign mode_gambling = SW[17];
+
+logic [3:0] hex_val_32;
+logic [3:0] hex_val_54;
+
+assign hex_val_32 = mode_gambling ? p1_out : random_capture;
+assign hex_val_54 = mode_gambling ? p2_out : random_prev;
 
 SevenHexDecoder seven_dec0(
 	.i_hex(random_value),
@@ -171,25 +184,24 @@ SevenHexDecoder seven_dec0(
 	.o_seven_one(hex0_w)
 );
 
-SevenHexDecoder p1_dec(
-	.i_hex(p1_out),
+SevenHexDecoder seven_dec1(
+	.i_hex(hex_val_32),
 	.o_seven_ten(hex3_w),
 	.o_seven_one(hex2_w)
 );
 
-SevenHexDecoder p2_dec(
-	.i_hex(p2_out),
+SevenHexDecoder seven_dec2(
+	.i_hex(hex_val_54),
 	.o_seven_ten(hex5_w),
 	.o_seven_one(hex4_w)
 );
 
-// Blinking logic: if blink is active, turn off the display by driving all bits to 1 (active low)
 assign HEX0 = hex0_w;
 assign HEX1 = hex1_w;
-assign HEX2 = p1_blink ? '1 : hex2_w;
-assign HEX3 = p1_blink ? '1 : hex3_w;
-assign HEX4 = p2_blink ? '1 : hex4_w;
-assign HEX5 = p2_blink ? '1 : hex5_w;
+assign HEX2 = (mode_gambling && p1_blink) ? '1 : hex2_w;
+assign HEX3 = (mode_gambling && p1_blink) ? '1 : hex3_w;
+assign HEX4 = (mode_gambling && p2_blink) ? '1 : hex4_w;
+assign HEX5 = (mode_gambling && p2_blink) ? '1 : hex5_w;
 assign HEX6 = '1;
 assign HEX7 = '1;
 
@@ -201,3 +213,4 @@ assign HEX7 = '1;
 `endif
 
 endmodule
+
