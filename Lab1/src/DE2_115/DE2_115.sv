@@ -140,6 +140,8 @@ logic keydown;
 logic [3:0] random_value;
 logic [3:0] random_capture;
 logic [3:0] random_prev;
+logic [3:0] p1_out, p2_out;
+logic p1_blink, p2_blink;
 
 Debounce deb0(
 	.i_in(KEY[0]),
@@ -152,29 +154,54 @@ Top top0(
 	.i_clk(CLOCK_50),
 	.i_rst_n(KEY[1]),
 	.i_start(keydown),
+	.i_p1_guess(SW[3:0]),
+	.i_p2_guess(SW[7:4]),
 	.o_random_out(random_value),
+	.o_p1_out(p1_out),
+	.o_p2_out(p2_out),
+	.o_p1_blink(p1_blink),
+	.o_p2_blink(p2_blink),
 	.o_random_capture(random_capture),
 	.o_random_prev(random_prev)
 );
 
+logic [6:0] hex0_w, hex1_w;
+logic [6:0] hex2_w, hex3_w;
+logic [6:0] hex4_w, hex5_w;
+
+logic mode_gambling;
+assign mode_gambling = SW[17];
+
+logic [3:0] hex_val_32;
+logic [3:0] hex_val_54;
+
+assign hex_val_32 = mode_gambling ? p1_out : random_capture;
+assign hex_val_54 = mode_gambling ? p2_out : random_prev;
+
 SevenHexDecoder seven_dec0(
 	.i_hex(random_value),
-	.o_seven_ten(HEX1),
-	.o_seven_one(HEX0)
+	.o_seven_ten(hex1_w),
+	.o_seven_one(hex0_w)
 );
 
 SevenHexDecoder seven_dec1(
-	.i_hex(random_capture),
-	.o_seven_ten(HEX3),
-	.o_seven_one(HEX2)
+	.i_hex(hex_val_32),
+	.o_seven_ten(hex3_w),
+	.o_seven_one(hex2_w)
 );
 
 SevenHexDecoder seven_dec2(
-	.i_hex(random_prev),
-	.o_seven_ten(HEX5),
-	.o_seven_one(HEX4)
+	.i_hex(hex_val_54),
+	.o_seven_ten(hex5_w),
+	.o_seven_one(hex4_w)
 );
 
+assign HEX0 = hex0_w;
+assign HEX1 = hex1_w;
+assign HEX2 = (mode_gambling && p1_blink) ? '1 : hex2_w;
+assign HEX3 = (mode_gambling && p1_blink) ? '1 : hex3_w;
+assign HEX4 = (mode_gambling && p2_blink) ? '1 : hex4_w;
+assign HEX5 = (mode_gambling && p2_blink) ? '1 : hex5_w;
 assign HEX6 = '1;
 assign HEX7 = '1;
 
@@ -186,3 +213,4 @@ assign HEX7 = '1;
 `endif
 
 endmodule
+
