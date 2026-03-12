@@ -138,6 +138,8 @@ module DE2_115 (
 
 logic keydown;
 logic [3:0] random_value;
+logic [3:0] p1_out, p2_out;
+logic p1_blink, p2_blink;
 
 Debounce deb0(
 	.i_in(KEY[0]),
@@ -150,19 +152,44 @@ Top top0(
 	.i_clk(CLOCK_50),
 	.i_rst_n(KEY[1]),
 	.i_start(keydown),
-	.o_random_out(random_value)
+	.i_p1_guess(SW[3:0]),
+	.i_p2_guess(SW[7:4]),
+	.o_random_out(random_value),
+	.o_p1_out(p1_out),
+	.o_p2_out(p2_out),
+	.o_p1_blink(p1_blink),
+	.o_p2_blink(p2_blink)
 );
+
+logic [6:0] hex0_w, hex1_w;
+logic [6:0] hex2_w, hex3_w;
+logic [6:0] hex4_w, hex5_w;
 
 SevenHexDecoder seven_dec0(
 	.i_hex(random_value),
-	.o_seven_ten(HEX1),
-	.o_seven_one(HEX0)
+	.o_seven_ten(hex1_w),
+	.o_seven_one(hex0_w)
 );
 
-assign HEX2 = '1;
-assign HEX3 = '1;
-assign HEX4 = '1;
-assign HEX5 = '1;
+SevenHexDecoder p1_dec(
+	.i_hex(p1_out),
+	.o_seven_ten(hex3_w),
+	.o_seven_one(hex2_w)
+);
+
+SevenHexDecoder p2_dec(
+	.i_hex(p2_out),
+	.o_seven_ten(hex5_w),
+	.o_seven_one(hex4_w)
+);
+
+// Blinking logic: if blink is active, turn off the display by driving all bits to 1 (active low)
+assign HEX0 = hex0_w;
+assign HEX1 = hex1_w;
+assign HEX2 = p1_blink ? '1 : hex2_w;
+assign HEX3 = p1_blink ? '1 : hex3_w;
+assign HEX4 = p2_blink ? '1 : hex4_w;
+assign HEX5 = p2_blink ? '1 : hex5_w;
 assign HEX6 = '1;
 assign HEX7 = '1;
 
