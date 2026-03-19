@@ -23,3 +23,4 @@ output_files/
 *.eqn
 *.hex
 *.pof
+.DS_Store
