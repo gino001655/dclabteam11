@@ -117,6 +117,8 @@ module Rsa256Core (
             end
             MONT_LAST: begin
                 mont1_start = 1; // mont1_a = m_reg, mont1_b = 1
+                mont1_a = m_reg;
+                mont1_b = 256'd1;
                 state_next = MONT_LAST_WAIT;
             end
             MONT_LAST_WAIT: begin
@@ -133,16 +135,6 @@ module Rsa256Core (
         endcase
     end
     
-    // In MONT_LAST and MONT_LAST_WAIT, we override the default mont inputs
-    always_comb begin
-        if (state_reg == MONT_LAST || state_reg == MONT_LAST_WAIT) begin
-            mont1_a = m_reg;
-            mont1_b = 256'd1;
-        end else begin
-            mont1_a = m_reg;
-            mont1_b = t_reg;
-        end
-    end
 
     always_ff @(posedge i_clk or posedge i_rst) begin
         if(i_rst) begin
