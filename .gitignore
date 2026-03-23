@@ -1,0 +1,26 @@
+# Quartus generated files
+db/
+incremental_db/
+output_files/
+*.qws
+*.bak
+*.smsg
+*.qmsg
+*.done
+*.rdb
+*.flock
+*.txt
+*.rpt
+*.summary
+*.jdi
+*.sof
+*.sof
+*.mif
+*.qip
+*.sip
+*.bsf
+*.dpf
+*.eqn
+*.hex
+*.pof
+.DS_Store
