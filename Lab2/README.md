@@ -216,3 +216,24 @@ python rs232.py COM3
     *   執行 `cp .\pc_key\keys1\* .\pc_key\keys\ -Force` 切換回原使用者。
     *   執行 `python rs232.py COM3` 確認能解密
 
+## 附錄：Qsys (Platform Designer) 整合流程
+若需重新編輯或復刻硬體系統，請遵循以下步驟將 `SW[17]` 導入 Wrapper：
+
+1. **編輯組件**：
+    *   開啟 Platform Designer (`rsa_qsys.qsys`)。
+    *   在 `Rsa_Wrapper` 組件上點擊右鍵選擇 **Edit...** 進入 Component Editor。
+    *   切換到 **Signals & Interfaces** 頁籤。
+    *   新增一個介面，類型選擇 **Conduit**，將其命名為 `sw_mode` (或其他易辨識名稱)。
+    *   在該介面下新增一個 Signal，名稱設為 `i_sw_17`，**Width** 設為 1，**Signal Type** 務必填寫為 `export`。
+    *   點擊 **Finish** 並存檔。
+
+2. **匯出介面**：
+    *   回到 Qsys 主畫面，在 `Rsa_Wrapper_0` 組件的 `sw_mode` 介面右側 **Export** 欄位連點兩下，將其匯出（建議命名為 `sw_mode`）。
+    *   點擊右下角 **Generate HDL...** 重新產生硬體描述檔。
+
+3. **頂層連線**：
+    *   開啟頂層檔案 `src/DE2_115/DE2_115.sv`。
+    *   在實例化 `rsa_qsys` 的區塊中，會多出一個 `.sw_mode_export` 的連接埠。
+    *   將其連至實體按鈕：`.sw_mode_export (SW[17])`。
+    *   儲存後於 Quartus 重新進行 **Full Compilation** 即可。
+
