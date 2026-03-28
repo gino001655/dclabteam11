@@ -127,7 +127,7 @@ The requirements are:
 ## Run pc_python program on pc
 
 * Recommended python version: Python2
-* Usage
+* Usagers
     * Windows: install python compiler
     * Mac/Linux: run with command line
 * Command

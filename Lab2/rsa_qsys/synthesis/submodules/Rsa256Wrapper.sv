@@ -113,8 +113,10 @@ always_comb begin
                     if (bytes_counter_r == 0) begin
                         state_w = S_GET_DATA;
                         bytes_counter_w = 31;
+                        StartRead(STATUS_BASE);
                     end else begin
                         bytes_counter_w = bytes_counter_r - 1;
+                        StartRead(STATUS_BASE);
                     end
                 end else if (state_r == S_GET_DATA) begin
                     enc_w = (enc_r << 8) | avm_readdata[7:0];
@@ -123,17 +125,19 @@ always_comb begin
                         rsa_start_w = 1;
                     end else begin
                         bytes_counter_w = bytes_counter_r - 1;
+                        StartRead(STATUS_BASE);
                     end
                 end
-                // After reading a byte, immediately go back to read STATUS for next byte
-                StartRead(STATUS_BASE);
             end else if (avm_address_r == TX_BASE) begin
                 // A byte has been successfully written
                 dec_w = dec_r << 8;
                 if (bytes_counter_r == 0) begin
-                    // Bonus: After sending all data, we immediately wait for next ciphertext without reset
-                    state_w = S_GET_DATA;
-                    bytes_counter_w = 31;
+                    state_w = S_GET_KEY;
+                    bytes_counter_w = 63;
+                    // 強制清空，確保下一筆金鑰不會跟舊的混在一起
+                    n_w = 256'b0; 
+                    d_w = 256'b0;
+                    enc_w = 256'b0;
                 end else begin
                     bytes_counter_w = bytes_counter_r - 1;
                 end
