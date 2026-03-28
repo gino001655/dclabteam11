@@ -1,8 +1,16 @@
 # # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
 # 
-preplace inst unsaved.clk_0 -pg 1 -lvl 1 -y 30
-preplace inst unsaved -pg 1 -lvl 1 -y 40 -regy -20
-preplace netloc EXPORT<net_container>unsaved</net_container>(SLAVE)unsaved.reset,(SLAVE)clk_0.clk_in_reset) 1 0 1 NJ
-preplace netloc EXPORT<net_container>unsaved</net_container>(SLAVE)clk_0.clk_in,(SLAVE)unsaved.clk) 1 0 1 NJ
-levelinfo -pg 1 0 50 270
-levelinfo -hier unsaved 60 90 260
+preplace inst rsa_qsys.Rsa_Wrapper_0 -pg 1 -lvl 3 -y 110
+preplace inst rsa_qsys.clk_0 -pg 1 -lvl 1 -y 70
+preplace inst rsa_qsys.altpll_0 -pg 1 -lvl 2 -y 50
+preplace inst rsa_qsys.uart_0 -pg 1 -lvl 4 -y 30
+preplace inst rsa_qsys -pg 1 -lvl 1 -y 40 -regy -20
+preplace netloc FAN_OUT<net_container>rsa_qsys</net_container>(MASTER)clk_0.clk_reset,(SLAVE)uart_0.reset,(SLAVE)Rsa_Wrapper_0.reset_sink,(SLAVE)altpll_0.inclk_interface_reset) 1 1 3 380 200 620 100 NJ
+preplace netloc EXPORT<net_container>rsa_qsys</net_container>(SLAVE)rsa_qsys.uart_0_external_connection,(SLAVE)uart_0.external_connection) 1 0 4 NJ 40 NJ 40 NJ 40 NJ
+preplace netloc FAN_OUT<net_container>rsa_qsys</net_container>(SLAVE)uart_0.clk,(SLAVE)Rsa_Wrapper_0.clock_sink,(MASTER)altpll_0.c0) 1 2 2 600 60 NJ
+preplace netloc POINT_TO_POINT<net_container>rsa_qsys</net_container>(SLAVE)altpll_0.inclk_interface,(MASTER)clk_0.clk) 1 1 1 N
+preplace netloc EXPORT<net_container>rsa_qsys</net_container>(SLAVE)clk_0.clk_in_reset,(SLAVE)rsa_qsys.reset) 1 0 1 NJ
+preplace netloc POINT_TO_POINT<net_container>rsa_qsys</net_container>(SLAVE)uart_0.s1,(MASTER)Rsa_Wrapper_0.avalon_master_0) 1 3 1 870
+preplace netloc EXPORT<net_container>rsa_qsys</net_container>(SLAVE)clk_0.clk_in,(SLAVE)rsa_qsys.clk) 1 0 1 NJ
+levelinfo -pg 1 0 170 1060
+levelinfo -hier rsa_qsys 180 210 410 650 900 1050
