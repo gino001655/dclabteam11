@@ -132,9 +132,12 @@ always_comb begin
                 // A byte has been successfully written
                 dec_w = dec_r << 8;
                 if (bytes_counter_r == 0) begin
-                    // Bonus: After sending all data, we immediately wait for next ciphertext without reset
-                    state_w = S_GET_DATA;
-                    bytes_counter_w = 31;
+                    state_w = S_GET_KEY;
+                    bytes_counter_w = 63;
+                    // 強制清空，確保下一筆金鑰不會跟舊的混在一起
+                    n_w = 256'b0; 
+                    d_w = 256'b0;
+                    enc_w = 256'b0;
                 end else begin
                     bytes_counter_w = bytes_counter_r - 1;
                 end
