@@ -163,3 +163,77 @@ Decode:
     python rsa.py d < cipher.bin > plain.txt
 ```
 
+# Bonus Feature: RSA 數位簽證與身分認證系統
+
+我們在 Lab2 的基礎上實作了 **RSA 數位簽章 (Digital Signature)** 認證機制，確保只有持有授權私鑰的 PC 才能指揮 FPGA 進行解密工作。
+
+### 核心功能
+1. **雙核心並行運算**：FPGA 內部同時實例化兩個 `Rsa256Core`。一個負責執行 RSA 解密，另一個負責使用註冊的公鑰驗證 PC 傳來的數位簽章。
+2. **模式切換與自動重置**：透過板子上的 `SW[17]` 進行模式切換。
+    *   `SW[17] = 0` (往下)：**一般模式**。運作方式與原始 Lab2 完全相同。
+    *   `SW[17] = 1` (往上)：**驗證模式**。啟用數位簽章檢查。
+    *   **切換即重置**：撥動 `SW[17]` 會自動觸發硬體 Soft Reset，清空所有暫存器與已註冊的金鑰，不須額外按 `KEY[0]`。
+3. **首位註冊機制 (First-Come-First-Serve)**：
+    *   在驗證模式下，FPGA 具有「身分綁定」特性。Reset 後第一台與它溝通的 Python 腳本會將其公鑰 (Public Key) 註冊到 FPGA 硬體中。
+    *   一旦註冊成功，FPGA 會「鎖定」該公鑰，直到下一次硬體重置為止。這能防止攻擊者在連線中途偷換身分。
+4. **智慧交握協議**：設計了 `0xAA` (查詢)、`0xBB` (新 Session)、`0xCC` (續傳) 通訊機制。Python 腳本會自動偵測硬體狀態，即使中斷重啟也不會導致硬體 FSM 卡死。
+5. **防禦回傳**：若簽章驗證失敗，FPGA 不會吐出明文，而是回傳嗆聲字串：`Nice try Diddy.`。
+
+---
+
+### 操作說明
+#### 1. 準備測試金鑰對
+在 `pc_python/` 目錄下執行金鑰產生器：
+```bash
+python generate_test_keys.py
+```
+這會產生 `pc_key/` 資料夾，內含數組完全合法的獨立 RSA 真鑰匙 (`keys`, `keys1`, `keys2`, `keys3`) 用於模擬不同使用者。
+
+#### 2. 執行解密
+直接執行更新過的 `rs232.py`，它會自動與 FPGA 溝通並決定解密流程：
+```bash
+python rs232.py COM3
+```
+
+---
+
+### DEMO 流程參考
+1.  **開啟驗證模式**：將 FPGA 的 `SW[17]` 撥到 ON。
+2.  **正常註冊與解密**：
+    *   確保 `pc_key/keys/` 下存放的是第一組使用者(ex:key1)的內容。
+    *   執行 `python rs232.py COM3`。
+    *   **現象**：FPGA 完成註冊，並成功產出解密後的 `dec.bin`。
+    *   執行 `cp .\golden\enc3.bin .\enc.bin` 更改輸入檔案
+    *   執行 `python rs232.py COM3`確認仍然能解密
+3.  **駭客介入測試 (Blocked)**：
+    *   **保持 FPGA 開啟且不切換開橋** 
+    *   執行 `cp .\pc_key\keys2\* .\pc_key\keys\ -Force` 切換到其他使用者。
+    *   執行 `python rs232.py COM3`。
+    *   **現象**：Python 提示「Using existing Public Key on FPGA」，但隨後因
+    為簽章與原註冊公鑰不符，FPGA 會回傳 `Nice try Diddy.`。
+
+4.  **切換回原本的使用者**：
+    *   執行 `cp .\pc_key\keys1\* .\pc_key\keys\ -Force` 切換回原使用者。
+    *   執行 `python rs232.py COM3` 確認能解密
+
+## 附錄：Qsys (Platform Designer) 整合流程
+若需重新編輯或復刻硬體系統，請遵循以下步驟將 `SW[17]` 導入 Wrapper：
+
+1. **編輯組件**：
+    *   開啟 Platform Designer (`rsa_qsys.qsys`)。
+    *   在 `Rsa_Wrapper` 組件上點擊右鍵選擇 **Edit...** 進入 Component Editor。
+    *   切換到 **Signals & Interfaces** 頁籤。
+    *   新增一個介面，類型選擇 **Conduit**，將其命名為 `sw_mode` (或其他易辨識名稱)。
+    *   在該介面下新增一個 Signal，名稱設為 `i_sw_17`，**Width** 設為 1，**Signal Type** 務必填寫為 `export`。
+    *   點擊 **Finish** 並存檔。
+
+2. **匯出介面**：
+    *   回到 Qsys 主畫面，在 `Rsa_Wrapper_0` 組件的 `sw_mode` 介面右側 **Export** 欄位連點兩下，將其匯出（建議命名為 `sw_mode`）。
+    *   點擊右下角 **Generate HDL...** 重新產生硬體描述檔。
+
+3. **頂層連線**：
+    *   開啟頂層檔案 `src/DE2_115/DE2_115.sv`。
+    *   在實例化 `rsa_qsys` 的區塊中，會多出一個 `.sw_mode_export` 的連接埠。
+    *   將其連至實體按鈕：`.sw_mode_export (SW[17])`。
+    *   儲存後於 Quartus 重新進行 **Full Compilation** 即可。
+

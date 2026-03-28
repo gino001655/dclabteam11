@@ -3,7 +3,8 @@
 			clk_clk                        : in  std_logic := 'X'; -- clk
 			reset_reset_n                  : in  std_logic := 'X'; -- reset_n
 			uart_0_external_connection_rxd : in  std_logic := 'X'; -- rxd
-			uart_0_external_connection_txd : out std_logic         -- txd
+			uart_0_external_connection_txd : out std_logic;        -- txd
+			sw_mode_beginbursttransfer     : in  std_logic := 'X'  -- beginbursttransfer
 		);
 	end component rsa_qsys;
 
@@ -12,6 +13,7 @@
 			clk_clk                        => CONNECTED_TO_clk_clk,                        --                        clk.clk
 			reset_reset_n                  => CONNECTED_TO_reset_reset_n,                  --                      reset.reset_n
 			uart_0_external_connection_rxd => CONNECTED_TO_uart_0_external_connection_rxd, -- uart_0_external_connection.rxd
-			uart_0_external_connection_txd => CONNECTED_TO_uart_0_external_connection_txd  --                           .txd
+			uart_0_external_connection_txd => CONNECTED_TO_uart_0_external_connection_txd, --                           .txd
+			sw_mode_beginbursttransfer     => CONNECTED_TO_sw_mode_beginbursttransfer      --                    sw_mode.beginbursttransfer
 		);
 

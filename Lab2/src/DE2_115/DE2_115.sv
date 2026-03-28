@@ -142,7 +142,8 @@ rsa_qsys my_qsys(
 	.clk_clk(CLOCK_50),
 	.reset_reset_n(KEY[0]),
 	.uart_0_external_connection_rxd(UART_RXD),
-	.uart_0_external_connection_txd(UART_TXD)
+	.uart_0_external_connection_txd(UART_TXD),
+	.sw_mode_export(SW[17]) 
 );
 
 endmodule
