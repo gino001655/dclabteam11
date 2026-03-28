@@ -10,7 +10,8 @@ s = Serial(
     parity=PARITY_NONE,
     stopbits=STOPBITS_ONE,
     xonxoff=False,
-    rtscts=False
+    rtscts=False,
+    timeout=1
 )
 fp_key = open('key.bin', 'rb')
 fp_enc = open('enc.bin', 'rb')
@@ -21,8 +22,8 @@ key = fp_key.read(64)
 enc = fp_enc.read()
 assert len(enc) % 32 == 0
 
-s.write(key)
 for i in range(0, len(enc), 32):
+    s.write(key)
     s.write(enc[i:i+32])
     dec = s.read(31)
     fp_dec.write(dec)
