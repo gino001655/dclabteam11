@@ -36,6 +36,8 @@
    * **若驗證失敗（數位簽章不符）**：Data Path 會被阻斷，Wrapper 改為強制將字串 `"Nice try Diddy... "` 寫入 TX 並回傳，拒絕送出明文。
 7. **無須重置機制**：送完資料後，Wrapper 自動退回 `S_IDLE` 等待下一組命令（Bonus 要求）。
 
+![Data Path](./Datapath.png)
+
 ---
 
 ## 3. Hardware Scheduling (FSM or Algorithm Workflow)
@@ -44,16 +46,19 @@
 
 ### `Rsa256Wrapper` FSM 排程 (整合 Bonus Command)
 狀態機擴展為 9 個狀態來管理複雜的封包生命週期：
+* **`Global Soft Reset`**：不論當前狀態為何，只要指撥開關 `SW17` 狀態發生改變（`sw_17_r ^ i_sw_17`），系統會立即產生 Soft Reset，強制清除所有暫存與公鑰註冊狀態，並將 FSM 切換回 `S_IDLE`。
 * **`S_IDLE`**：初始閒置狀態，監聽第一個 Byte 來決定路線。
-  * `0xAA` $\to$ 跳轉 `S_SEND_MODE_RESP`（回報模式與公鑰註冊狀態）。
-  * `0xBB` $\to$ 跳轉 `S_WAIT_PUBKEY` 進行完整的 session 與公鑰替換。
-  * `0xCC` $\to$ 跳轉 `S_GET_KEY` 直接沿用舊鑰匙繼續解密。
+  * 收到 `0xAA` $\to$ 跳轉 `S_SEND_MODE_RESP`（回報模式與公鑰註冊狀態）。
+  * 收到 `0xBB` $\to$ 判斷若 `i_sw_17 == 1` 且尚未註冊過公鑰 (`!pubkey_enrolled_r`)，則跳轉 `S_WAIT_PUBKEY` 進行完整的 session 與公鑰替換；反之則直接跳轉 `S_GET_KEY`。
+  * 收到 `0xCC` $\to$ 跳轉 `S_GET_KEY` 直接沿用舊鑰匙繼續解密。
 * **`S_WAIT_PUBKEY`**：接收 64 bytes 資料以組合驗證用的 `n_pub` 與 `e`。
 * **`S_GET_KEY`**：接收 64 bytes 資料以組合解密用的 `n` 與 `d`。
 * **`S_GET_DATA`**：接收 32 bytes 的 Ciphertext (`enc`)。
 * **`S_GET_SIGNATURE`**：(僅啟用 `sw_17` 會觸發) 接收 32 bytes 的數位簽章 (`sig`)。
 * **`S_WAIT_CALCULATE`**：關閉 Avalon 讀取，等待解密與驗證兩組核心發出 `finished`。完成後比對內部暫存器。若簽章通過則進入 `S_SEND_DATA`，若失敗則進入 `S_REJECT`。
 * **`S_SEND_DATA` / `S_REJECT` / `S_SEND_MODE_RESP`**：這三個狀態負責輪詢 `TX_OK`，將明文、警告字串或狀態回應封裝後送出，並於結束後皆自動跳轉回 `S_IDLE` 以接受新指令，徹底消除了每次都要硬體 Reset 的繁瑣。
+
+![Rsa256Wrapper FSM](./RSA256Wrapper.png)
 
 ### `Rsa256Core` Algorithm Workflow (FSM)
 核心採取 Montgomery 演算法進行運算，平行雙核心階採用相同的內部狀態：
@@ -64,21 +69,23 @@
 * **`MONT_LAST` & `MONT_LAST_WAIT`**：進行最後一次乘法 $m \times 1$，消除加入的 $2^{256}$ 轉換因子。
 * **`FINISH`**：運算完畢。
 
+![Rsa256Core FSM](./RSA256core.png)
+
 ---
 
 ## 4. Fitter Summary 截圖
 
-*(請在此處貼上 Quartus 產生之 Fitter Summary 截圖，以展現 ALMs, Registers 的資源消耗，特別是雙核心帶來的變化)*
+*(Quartus 產生之 Fitter Summary 截圖，以展現 ALMs, Registers 的資源消耗，特別是雙核心帶來的變化)*
 
-[此處預留給同學貼上截圖]
+![Fitter Summary](./Fitter%20summary_Lab2.png)
 
 ---
 
 ## 5. Timing Analyzer 截圖
 
-*(請在此處貼上 Quartus Timing Analyzer 關於 Setup Time (WNS), Hold Time 等時序分析截圖)*
+*(Quartus Timing Analyzer 關於 Setup Time (WNS), Hold Time 等時序分析截圖)*
 
-[此處預留給同學貼上截圖]
+![Timing Analyzer](./Timing%20analyzer_Lab2.png)
 
 ---
 
