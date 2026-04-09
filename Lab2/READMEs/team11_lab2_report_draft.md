@@ -36,7 +36,7 @@
    * **若驗證失敗（數位簽章不符）**：Data Path 會被阻斷，Wrapper 改為強制將字串 `"Nice try Diddy... "` 寫入 TX 並回傳，拒絕送出明文。
 7. **無須重置機制**：送完資料後，Wrapper 自動退回 `S_IDLE` 等待下一組命令（Bonus 要求）。
 
-![Data Path](./Datapath.png)
+![Data Path](./image/Datapath.png)
 
 ---
 
@@ -58,7 +58,7 @@
 * **`S_WAIT_CALCULATE`**：關閉 Avalon 讀取，等待解密與驗證兩組核心發出 `finished`。完成後比對內部暫存器。若簽章通過則進入 `S_SEND_DATA`，若失敗則進入 `S_REJECT`。
 * **`S_SEND_DATA` / `S_REJECT` / `S_SEND_MODE_RESP`**：這三個狀態負責輪詢 `TX_OK`，將明文、警告字串或狀態回應封裝後送出，並於結束後皆自動跳轉回 `S_IDLE` 以接受新指令，徹底消除了每次都要硬體 Reset 的繁瑣。
 
-![Rsa256Wrapper FSM](./RSA256Wrapper.png)
+![Rsa256Wrapper FSM](./image/RSA256Wrapper.png)
 
 ### `Rsa256Core` Algorithm Workflow (FSM)
 核心採取 Montgomery 演算法進行運算，平行雙核心階採用相同的內部狀態：
@@ -69,7 +69,8 @@
 * **`MONT_LAST` & `MONT_LAST_WAIT`**：進行最後一次乘法 $m \times 1$，消除加入的 $2^{256}$ 轉換因子。
 * **`FINISH`**：運算完畢。
 
-![Rsa256Core FSM](./RSA256core.png)
+<img src="./image/RSA256core.png" alt="Rsa256Core FSM" width="450" />
+
 
 ---
 
@@ -77,7 +78,7 @@
 
 *(Quartus 產生之 Fitter Summary 截圖，以展現 ALMs, Registers 的資源消耗，特別是雙核心帶來的變化)*
 
-![Fitter Summary](./Fitter%20summary_Lab2.png)
+![Fitter Summary](./image/Fitter%20summary_Lab2.png)
 
 ---
 
@@ -85,14 +86,10 @@
 
 *(Quartus Timing Analyzer 關於 Setup Time (WNS), Hold Time 等時序分析截圖)*
 
-![Timing Analyzer](./Timing%20analyzer_Lab2.png)
+![Timing Analyzer](./image/Timing%20analyzer_Lab2.png)
 
 ---
 
 ## 6. 遇到的問題與解決辦法，心得與建議
 
-@陳致堯 您要寫嗎
-
-*(備註：可參考以下開發歷程作為素材)*
-* **遇到的問題：實作 Bonus 免重設協定時衍生的軟硬體不同步**
-  * **解決辦法：** 一開始把狀態機從純粹的巡迴改裝成會聽 `IDLE` 第一個 Byte (0xAA, 0xBB, 0xCC) 時，發生了 Python 腳本塞資料太快，導致硬體還沒切好模式就漏接後續 32 bytes 的情況。把 Wrapper 發送端與接收端的應答徹底拆分，並在狀態中加入了 `S_SEND_MODE_RESP` 強制要求 Python 端收到硬體 `ACK` 回應之後，才能把 Payload 串流傾倒下來，成功解決同步問題，也讓「數位簽章雙核驗證」跑得非常流暢。
+我認為將流程圖畫得清楚並不是一件簡單的工作，甚至也不是叫AI one shot就可以做好的，必須要對整個檔案架構流程相當熟悉且實際操作過，才能確保畫出的圖正確。
